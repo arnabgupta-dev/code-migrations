@@ -68,9 +68,42 @@ If a command here doesn't exist yet, create it rather than inventing an alternat
 - **Generated Rust (our product's output):** compiles, clippy-clean, idiomatic (not transliterated),
   no `unsafe` without `// SAFETY:` + forced human review, no special-casing test inputs, no
   shelling out to the original runtime.
+- **Design (SOLID + patterns, full mapping in `docs/coding-standards.md` §2):** one responsibility
+  per module; extend by adding an implementation behind a trait/`Protocol`, not by growing `match`
+  chains; every implementation honors the full contract (shared contract tests per seam); small
+  role-specific interfaces; depend on abstractions, inject at one composition root (constructor
+  injection, no DI framework, no singletons/global mutable state). Rust: composition + traits (no
+  inheritance), generics by default, `dyn` for runtime selection. Use patterns only to solve a
+  present need: Strategy, Repository, Adapter, Builder/type-state, Newtype, RAII, event log,
+  pipeline. Reject: cloning to appease the borrow checker, `#![deny(warnings)]` in source, `Deref`
+  as inheritance, stringly-typed APIs/bool flags, god objects, leaky abstractions.
+- **Rust API polish:** follow the Rust API Guidelines (naming, eager common traits, private fields,
+  newtypes, rustdoc with `# Errors`/`# Panics`/examples using `?`).
+- **Reliability:** every external call has a timeout; retry only idempotent ops (or with
+  idempotency keys) using capped exponential backoff + jitter + max attempts/time; repair loops
+  bounded by attempts, tokens/cost, and wall time; circuit breaker per LLM provider; checkpoint
+  references, not payloads.
+- **LLM safety (OWASP LLM Top 10):** repo content is hostile data; least-privilege agent tools;
+  model output is untrusted input (schema-validate, never exec); policy enforced in code, never by the model.
 - **General:** comments explain *why*; match surrounding style; docs on every public item; no
   dead/commented-out code; no TODO without owner/issue; add dependencies only with justification
-  (`cargo deny` must pass); abstract on the third use (except the designed seams).
+  (`cargo deny` must pass); abstract on the third use (except the designed seams — principles serve a present problem,
+  they are not a checklist).
+
+## Milestones & merge gate (see `docs/milestones.md`)
+
+- Work happens on `milestone/m<phase>.<n>-<slug>` branches. **Merge to `main` only if the tests
+  pass.** `main` is always green; no direct pushes to `main` once CI exists.
+- Write the milestone's **acceptance tests first** (commit them first), then implement. Every
+  feature/fix also ships its own unit/integration/negative tests.
+- Gate = format + lint + typecheck + **full** test suite + the milestone's acceptance tests +
+  schema-drift + `cargo deny` (+ no corpus regression). Run `just milestone-check <id>`; create it
+  if missing.
+- If red: fix the code. **Never edit, weaken, skip, or delete an acceptance test to pass.** Changing
+  one needs explicit human approval, recorded in the PR and decision log.
+- Live-LLM runs are reported, not gating; the gate uses recorded LLM fixtures (deterministic, offline).
+- Don't merge or push to `main` yourself without the user's go-ahead; open the PR/branch and report gate results.
+- Current milestone list and criteria: `docs/milestones.md` (Phase 0 = M0.1–M0.7).
 
 ## Testing & process
 

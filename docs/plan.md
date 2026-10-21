@@ -66,6 +66,9 @@ Single pair: **Python → Rust**, for technical users.
 - Audit logs, SLAs, team roles
 - **Success:** repeatable revenue from mid-market/enterprise
 
+Each phase is broken into milestones with their own acceptance tests, and **a milestone merges to
+`main` only when its tests pass** — see `milestones.md`.
+
 ## 5. Immediate next actions (weeks 1–2)
 
 1. ✅ First language pair: **Python → Rust** (decided, see `tech-stack.md`)
